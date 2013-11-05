@@ -29,7 +29,6 @@ abstract class QuickCheckHeap extends Properties("Heap") with IntHeap {
     if(isEmpty(h)) as else readAllDecreasing(deleteMin(h), findMin(h) :: as)
 
   lazy val genHeap: Gen[H] = for{
-    len <- arbitrary[A].suchThat(i => i >= 0 && i < 100)
     i <- arbitrary[A]
     h <- oneOf(value(empty), genHeap)
   } yield insert(i, h)
