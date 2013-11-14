@@ -7,7 +7,7 @@ class Wire {
   private var actions: List[Simulator#Action] = List()
 
   def getSignal: Boolean = sigVal
-  
+
   def setSignal(s: Boolean) {
     if (s != sigVal) {
       sigVal = s
@@ -59,15 +59,45 @@ abstract class CircuitSimulator extends Simulator {
   //
 
   def orGate(a1: Wire, a2: Wire, output: Wire) {
-    ???
+    def orAction() {
+      val a1Sig = a1.getSignal
+      val a2Sig = a2.getSignal
+
+      afterDelay(OrGateDelay) { output.setSignal(a1Sig | a2Sig) }
+    }
+
+    a1 addAction orAction
+    a2 addAction orAction
   }
-  
+
   def orGate2(a1: Wire, a2: Wire, output: Wire) {
-    ???
+    val ia1, ia2, ia12 = new Wire
+
+    inverter(a1, ia1)
+    inverter(a2, ia2)
+    andGate(ia1, ia2, ia12)
+    inverter(ia12, output)
   }
 
   def demux(in: Wire, c: List[Wire], out: List[Wire]) {
-    ???
+    def demuxAction() {
+      val inSig = in.getSignal
+      val controls = c.map(_.getSignal)
+
+      def loop(controlsLeft: List[Boolean], outputsLeft: List[Wire]): Unit = controlsLeft match {
+        case Nil =>
+          outputsLeft.head.setSignal(inSig)
+        case true :: rest =>
+          loop(rest, outputsLeft.take(outputsLeft.size / 2))
+        case false :: rest =>
+          loop(rest, outputsLeft.drop(outputsLeft.size / 2))
+      }
+
+      loop(controls, out)
+    }
+
+    in addAction demuxAction
+    c.foreach(_ addAction demuxAction)
   }
 
 }
