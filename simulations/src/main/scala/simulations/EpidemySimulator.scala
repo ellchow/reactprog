@@ -24,11 +24,11 @@ class EpidemySimulator extends Simulator {
 
   import SimConfig._
 
-  val persons: List[Person] = (0 until SimConfig.population).view.map{ i =>
-    val p = new Person(i)
-    p.infected = random < prevalenceRate
-    p
-  }.toList
+  val persons: List[Person] = (0 until SimConfig.population).map(i => new Person(i)).toList
+
+  util.Random.shuffle(persons)
+    .take((SimConfig.prevalenceRate * SimConfig.population).toInt)
+    .foreach(_.infected = true)
 
   persons.foreach{ p =>
     afterDelay(0)(p.move)
