@@ -60,13 +60,13 @@ class EpidemySuite extends FunSuite {
       val infectedPerson = (es.persons.find{_.infected}).get
 
       //before incubation time
-    	while(es.agenda.head.time < incubationTime){
-    		assert(infectedPerson.infected == true, "Infected person keeps infected in 6 days")
-    		assert(infectedPerson.sick == false, "Infected person does not get sick in 6 days")
-    		assert(infectedPerson.immune == false, "Infected person cannot become immune in 6 days")
-    		assert(infectedPerson.dead == false, "Infected person does not die in 6 days")
-    		es.next
-    	}
+        while(es.agenda.head.time < incubationTime){
+                assert(infectedPerson.infected == true, "Infected person keeps infected in 6 days")
+                assert(infectedPerson.sick == false, "Infected person does not get sick in 6 days")
+                assert(infectedPerson.immune == false, "Infected person cannot become immune in 6 days")
+                assert(infectedPerson.dead == false, "Infected person does not die in 6 days")
+                es.next
+        }
 
       //incubation time has passed, there should be an event for getting sick
       assert(es.agenda.head.time == incubationTime, "You should set a 'sick' event after incubation time")
@@ -75,11 +75,11 @@ class EpidemySuite extends FunSuite {
 
       //wait for dieTime
       while(es.agenda.head.time < dieTime){
-      	assert(infectedPerson.infected == true, "Sick person keeps infected")
-      	assert(infectedPerson.sick == true, "Sick person keeps sick before turning immune")
-      	assert(infectedPerson.immune == false, "Sick person is not immune")
-      	assert(infectedPerson.dead == false, "Sick person does not die before 14 infected days")
-      	es.next
+        assert(infectedPerson.infected == true, "Sick person keeps infected")
+        assert(infectedPerson.sick == true, "Sick person keeps sick before turning immune")
+        assert(infectedPerson.immune == false, "Sick person is not immune")
+        assert(infectedPerson.dead == false, "Sick person does not die before 14 infected days")
+        es.next
       }
 
       assert(es.agenda.head.time == dieTime, "You should set a 'die' event (decides with a probability 25% whether the person dies) after 14 days")
@@ -89,16 +89,16 @@ class EpidemySuite extends FunSuite {
 
 
   test("transmissibility rate"){
-	  var infectedTimes = 0
-	  for(i <- 0 to 100){
-		  val es = new EpidemySimulator
-		  val healthyPerson = (es.persons find {p => !p.infected}).get
-		  es.persons.filter(p => p != healthyPerson) foreach {_.infected = true}
+          var infectedTimes = 0
+          for(i <- 0 to 100){
+                  val es = new EpidemySimulator
+                  val healthyPerson = (es.persons find {p => !p.infected}).get
+                  es.persons.filter(p => p != healthyPerson) foreach {_.infected = true}
 
       while(es.agenda.head.time < 6) es.next
 
       infectedTimes = infectedTimes + (if(healthyPerson.infected) 1 else 0)
-	  }
-	  assert(infectedTimes > 0, "A person should get infected according to the transmissibility rate when he moves into a room with an infectious person")
+          }
+          assert(infectedTimes > 0, "A person should get infected according to the transmissibility rate when he moves into a room with an infectious person")
   }
 }
