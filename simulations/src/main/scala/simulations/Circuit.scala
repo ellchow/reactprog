@@ -93,9 +93,9 @@ abstract class CircuitSimulator extends Simulator {
           loop(rest, outputsLeft.drop(outputsLeft.size / 2))
       }
 
+      out.foreach(_.setSignal(false))
       loop(controls, out)
     }
-
     in addAction demuxAction
     c.foreach(_ addAction demuxAction)
   }
