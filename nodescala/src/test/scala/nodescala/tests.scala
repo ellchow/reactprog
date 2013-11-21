@@ -34,6 +34,15 @@ class NodeScalaSuite extends FunSuite {
     }
   }
 
+  test("A Future of list should be created") {
+    val lst = (1 to 10).toList
+    val all = Future.all(lst.map(i => Future.always(i)))
+
+    val res = Await.result(all, 1 second)
+    assert(res == lst)
+  }
+
+  /*
   test("CancellationTokenSource should allow stopping the computation") {
     val cts = CancellationTokenSource()
     val ct = cts.cancellationToken
@@ -150,7 +159,7 @@ class NodeScalaSuite extends FunSuite {
 
     dummySubscription.unsubscribe()
   }
-
+  */
 }
 
 

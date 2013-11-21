@@ -5,6 +5,7 @@ import scala.concurrent._
 import scala.concurrent.duration._
 import ExecutionContext.Implicits.global
 import scala.async.Async.{async, await}
+import scala.collection.mutable
 
 /** Contains basic data types, data structures and `Future` extensions.
  */
@@ -16,13 +17,14 @@ package object nodescala {
 
     /** Returns a future that is always completed with `value`.
      */
-    def always[T](value: T): Future[T] = ???
+    def always[T](value: T): Future[T] = Promise.successful(value).future
 
     /** Returns a future that is never completed.
      *
      *  This future may be useful when testing if timeout logic works correctly.
      */
-    def never[T]: Future[T] = ???
+     def never[T]: Future[T] = Promise[T]().future
+
 
     /** Given a list of futures `fs`, returns the future holding the list of values of all the futures from `fs`.
      *  The returned future is completed only once all of the futures in `fs` have been completed.
@@ -30,6 +32,9 @@ package object nodescala {
      *  If any of the futures `fs` fails, the resulting future also fails.
      */
     def all[T](fs: List[Future[T]]): Future[List[T]] = ???
+      // fs.foldRight(Future[List[T]](Nil)){ (f, fl) =>
+      //   for{l <- fl; t <- f} yield { (t :: l) }
+      // }
 
     /** Given a list of futures `fs`, returns the future holding the value of the future from `fs` that completed first.
      *  If the first completing future in `fs` fails, then the result is failed as well.
@@ -64,7 +69,7 @@ package object nodescala {
 
     /** Returns the result of this future if it is completed now.
      *  Otherwise, throws a `NoSuchElementException`.
-     *  
+     *
      *  Note: This method does not wait for the result.
      *  It is thus non-blocking.
      *  However, it is also non-deterministic -- it may throw or return a value
@@ -74,7 +79,7 @@ package object nodescala {
 
     /** Continues the computation of this future by taking the current future
      *  and mapping it into another future.
-     * 
+     *
      *  The function `cont` is called only after the current future completes.
      *  The resulting future contains a value returned by `cont`.
      */
@@ -82,7 +87,7 @@ package object nodescala {
 
     /** Continues the computation of this future by taking the result
      *  of the current future and mapping it into another future.
-     *  
+     *
      *  The function `cont` is called only after the current future completes.
      *  The resulting future contains a value returned by `cont`.
      */
@@ -119,7 +124,7 @@ package object nodescala {
 
   /** The `CancellationTokenSource` is a special kind of `Subscription` that
    *  returns a `cancellationToken` which is cancelled by calling `unsubscribe`.
-   *  
+   *
    *  After calling `unsubscribe` once, the associated `cancellationToken` will
    *  forever remain cancelled -- its `isCancelled` will return `false.
    */
