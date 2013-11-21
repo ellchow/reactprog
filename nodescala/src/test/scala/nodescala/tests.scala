@@ -42,6 +42,22 @@ class NodeScalaSuite extends FunSuite {
     assert(res == lst)
   }
 
+
+  test("Any value may be returned in Future") {
+    for(_ <- 1 to 20){
+      val ok = List(1,2)
+      val except = new Exception("die!")
+      val any = Future.any(Future(throw except) :: ok.map(x => Future(x)))
+      try{
+        val res = Await.result(any, 1 second)
+
+        assert(ok.contains(res))
+      }catch {
+        case e: Exception => assert(e == except)
+      }
+    }
+  }
+
   /*
   test("CancellationTokenSource should allow stopping the computation") {
     val cts = CancellationTokenSource()
