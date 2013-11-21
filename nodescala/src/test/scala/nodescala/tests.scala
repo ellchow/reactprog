@@ -66,7 +66,7 @@ class NodeScalaSuite extends FunSuite {
     Await.result(delay, (s + 1) seconds)
     val end = System.currentTimeMillis
 
-    assert((end - start) / 1000.0 <= (s + 0.01))
+    assert(math.abs((end - start) / 1000.0) <= (s + 0.01))
   }
 
   /*
