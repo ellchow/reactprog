@@ -69,6 +69,86 @@ class NodeScalaSuite extends FunSuite {
     assert(math.abs((end - start) / 1000.0) <= (s + 0.01))
   }
 
+  test("Now should get value if available") {
+    try{
+      Future.never[Int].now
+      assert(false)
+    } catch {
+      case e: NoSuchElementException => assert(true)
+    }
+
+    try{
+      val t = Future.always(1).now
+      assert(t == 1)
+    } catch {
+      case e: NoSuchElementException => assert(false)
+    }
+
+    val except = new Exception("die")
+    try{
+      Future.always(throw except).now
+      assert(false)
+    } catch {
+      case e: NoSuchElementException => assert(false)
+      case e: Exception => assert(e == except)
+    }
+  }
+
+  test("continueWith transforms future after completion") {
+    val doubled: Future[Int] => Int = Await.result(_, 0 seconds) * 2
+
+    try{
+      Await.result(Future.never[Int].continueWith(doubled), 1 second)
+      assert(false)
+    } catch {
+      case e: TimeoutException => assert(true)
+    }
+
+    try{
+      val t = Await.result(Future.always(1).continueWith(doubled), 1 second)
+      assert(t == 2)
+    } catch {
+      case e: TimeoutException => assert(false)
+    }
+
+    val except = new Exception("die")
+    try{
+      Future.always[Int](throw except).continueWith(doubled)
+      assert(false)
+    } catch {
+      case e: Exception => assert(e == except)
+    }
+  }
+
+  test("continue transforms result after completion") {
+    val doubled: Try[Int] => Int = _ match {
+      case Success(i) => 2 * i
+      case Failure(e) => throw e
+    }
+
+    try{
+      Await.result(Future.never[Int].continue(doubled), 1 second)
+      assert(false)
+    } catch {
+      case e: TimeoutException => assert(true)
+    }
+
+    try{
+      val t = Await.result(Future.always(1).continue(doubled), 1 second)
+      assert(t == 2)
+    } catch {
+      case e: TimeoutException => assert(false)
+    }
+
+    val except = new Exception("die")
+    try{
+      Future.always[Int](throw except).continue(doubled)
+      assert(false)
+    } catch {
+      case e: Exception => assert(e == except)
+    }
+  }
+
   /*
   test("CancellationTokenSource should allow stopping the computation") {
     val cts = CancellationTokenSource()
