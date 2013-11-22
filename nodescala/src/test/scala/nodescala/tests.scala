@@ -149,7 +149,7 @@ class NodeScalaSuite extends FunSuite {
     }
   }
 
-  /*
+
   test("CancellationTokenSource should allow stopping the computation") {
     val cts = CancellationTokenSource()
     val ct = cts.cancellationToken
@@ -166,7 +166,7 @@ class NodeScalaSuite extends FunSuite {
     cts.unsubscribe()
     assert(Await.result(p.future, 1 second) == "done")
   }
-
+  /*
   class DummyExchange(val request: Request) extends Exchange {
     @volatile var response = ""
     val loaded = Promise[String]()
