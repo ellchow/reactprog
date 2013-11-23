@@ -36,7 +36,6 @@ trait NodeScala {
       exchange.write(response.next)
     }
     exchange.close
-    println(s"done responding to ${exchange.request}")
   }
 
   /** A server:
