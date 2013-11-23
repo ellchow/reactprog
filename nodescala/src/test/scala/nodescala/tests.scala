@@ -166,7 +166,7 @@ class NodeScalaSuite extends FunSuite {
     cts.unsubscribe()
     assert(Await.result(p.future, 1 second) == "done")
   }
-  /*
+
   class DummyExchange(val request: Request) extends Exchange {
     @volatile var response = ""
     val loaded = Promise[String]()
@@ -257,6 +257,7 @@ class NodeScalaSuite extends FunSuite {
       val webpage = dummy.emit("/testDir", req)
       val content = Await.result(webpage.loaded.future, 1 second)
       val expected = (for (kv <- req.iterator) yield (kv + "\n").toString).mkString
+
       assert(content == expected, s"'$content' vs. '$expected'")
     }
 
@@ -266,7 +267,7 @@ class NodeScalaSuite extends FunSuite {
 
     dummySubscription.unsubscribe()
   }
-  */
+
 }
 
 

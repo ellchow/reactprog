@@ -29,7 +29,15 @@ trait NodeScala {
    *  @param token        the cancellation token for
    *  @param body         the response to write back
    */
-  private def respond(exchange: Exchange, token: CancellationToken, response: Response): Unit = ???
+  private def respond(exchange: Exchange, token: CancellationToken, response: Response): Unit = {
+    var stop = false
+
+    while(!token.isCancelled && response.hasNext){
+      exchange.write(response.next)
+    }
+    exchange.close
+    println(s"done responding to ${exchange.request}")
+  }
 
   /** A server:
    *  1) creates and starts an http listener
@@ -41,7 +49,22 @@ trait NodeScala {
    *  @param handler        a function mapping a request to a response
    *  @return               a subscription that can stop the server and all its asynchronous operations *entirely*.
    */
-  def start(relativePath: String)(handler: Request => Response): Subscription = ???
+  def start(relativePath: String)(handler: Request => Response): Subscription = {
+    val l = createListener(relativePath)
+
+    Future.run(){ ct =>
+      Future{
+        while (ct.nonCancelled){
+          l.nextRequest().map{ case (request, exchange) =>
+                               val response = handler(request)
+                               respond(exchange, ct, response)
+                             }
+        }
+      }
+    }
+
+    l.start()
+  }
 
 }
 
@@ -60,7 +83,7 @@ object NodeScala {
 
   /** Used to write the response to the request.
    */
-  trait Exchange { 
+  trait Exchange {
     /** Writes to the output stream of the exchange.
      */
     def write(s: String): Unit
@@ -111,7 +134,16 @@ object NodeScala {
      *  @param relativePath    the relative path on which we want to listen to requests
      *  @return                the promise holding the pair of a request and an exchange object
      */
-    def nextRequest(): Future[(Request, Exchange)] = ???
+    def nextRequest(): Future[(Request, Exchange)] = {
+      val p = Promise[(Request, Exchange)]()
+
+      createContext{ exchange =>
+        p.success((exchange.request, exchange))
+        removeContext()
+      }
+
+      p.future
+    }
   }
 
   object Listener {
