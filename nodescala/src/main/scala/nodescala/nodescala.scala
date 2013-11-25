@@ -10,6 +10,7 @@ import scala.collection.JavaConversions._
 import java.util.concurrent.{Executor, ThreadPoolExecutor, TimeUnit, LinkedBlockingQueue}
 import com.sun.net.httpserver.{HttpExchange, HttpHandler, HttpServer}
 import java.net.InetSocketAddress
+import scala.language.postfixOps
 
 /** Contains utilities common to the NodeScala© framework.
  */
@@ -36,7 +37,6 @@ trait NodeScala {
       exchange.write(response.next)
     }
     exchange.close
-    println(s"done responding to ${exchange.request}")
   }
 
   /** A server:
@@ -51,19 +51,20 @@ trait NodeScala {
    */
   def start(relativePath: String)(handler: Request => Response): Subscription = {
     val l = createListener(relativePath)
+    val lSub = l.start()
 
     Future.run(){ ct =>
       Future{
         while (ct.nonCancelled){
-          l.nextRequest().map{ case (request, exchange) =>
-                               val response = handler(request)
-                               respond(exchange, ct, response)
-                             }
+          val (request, exchange) = Await.result(l.nextRequest(), Duration.Inf)
+          val response = handler(request)
+          respond(exchange, ct, response)
         }
+        lSub.unsubscribe()
       }
     }
 
-    l.start()
+    lSub
   }
 
 }
