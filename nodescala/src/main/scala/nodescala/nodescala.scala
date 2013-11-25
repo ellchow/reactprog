@@ -53,18 +53,17 @@ trait NodeScala {
     val l = createListener(relativePath)
     val lSub = l.start()
 
-    Future.run(){ ct =>
+    val cts = Future.run(){ ct =>
       Future{
         while (ct.nonCancelled){
           val (request, exchange) = Await.result(l.nextRequest(), Duration.Inf)
           val response = handler(request)
           respond(exchange, ct, response)
         }
-        lSub.unsubscribe()
       }
     }
 
-    lSub
+    Subscription(cts, lSub)
   }
 
 }
