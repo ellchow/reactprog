@@ -10,6 +10,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.util.{ Try, Success, Failure }
 import rx.subscriptions.CompositeSubscription
 import rx.lang.scala.Observable
+import rx.lang.scala.subjects._
+import rx.lang.scala.Notification._
 import observablex._
 import search._
 
@@ -37,7 +39,7 @@ trait WikipediaApi {
      *
      * E.g. `"erik", "erik meijer", "martin` should become `"erik", "erik_meijer", "martin"`
      */
-    def sanitized: Observable[String] = ???
+    def sanitized: Observable[String] = obs.map(_.replaceAll(" ", "_"))
 
   }
 
@@ -48,7 +50,10 @@ trait WikipediaApi {
      *
      * E.g. `1, 2, 3, !Exception!` should become `Success(1), Success(2), Success(3), Failure(Exception), !TerminateStream!`
      */
-    def recovered: Observable[Try[T]] = ???
+    def recovered: Observable[Try[T]] = obs.materialize.filter{ case OnCompleted() => false; case _ => true }.map{
+      case OnNext(t) => Success(t)
+      case OnError(e) => Failure(e)
+    }
 
     /** Emits the events from the `obs` observable, until `totalSec` seconds have elapsed.
      *
@@ -56,8 +61,7 @@ trait WikipediaApi {
      *
      * Note: uses the existing combinators on observables.
      */
-    def timedOut(totalSec: Long): Observable[T] = ???
-
+    def timedOut(totalSec: Long): Observable[T] = obs.window(totalSec seconds).take(1).flatten
 
     /** Given a stream of events `obs` and a method `requestMethod` to map a request `T` into
      * a stream of responses `S`, returns a stream of all the responses wrapped into a `Try`.
@@ -84,7 +88,8 @@ trait WikipediaApi {
      *
      * Observable(1, 1, 1, 2, 2, 2, 3, 3, 3)
      */
-    def concatRecovered[S](requestMethod: T => Observable[S]): Observable[Try[S]] = ???
+    def concatRecovered[S](requestMethod: T => Observable[S]): Observable[Try[S]] =
+      obs.flatMap(requestMethod).recovered
 
   }
 
