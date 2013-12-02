@@ -53,7 +53,10 @@ trait SwingApi {
       * @return an observable with a stream of text field updates
       */
     def textValues: Observable[String] = Observable{ observer =>
-      field.subscribe{ case ValueChanged(tf) => observer.onNext(tf.text) }
+      field.subscribe{
+        case ValueChanged(tf) => observer.onNext(tf.text)
+        case _ => ()
+      }
       Subscription{}
     }
   }
@@ -66,7 +69,10 @@ trait SwingApi {
      * @return an observable with a stream of buttons that have been clicked
      */
     def clicks: Observable[Button] = Observable{ observer =>
-      button.subscribe{ case ButtonClicked(b) => observer.onNext(b) }
+      button.subscribe{
+        case ButtonClicked(b) => observer.onNext(b)
+        case _ => ()
+      }
       Subscription{}
     }
 
