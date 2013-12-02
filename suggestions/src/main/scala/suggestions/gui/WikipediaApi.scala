@@ -89,7 +89,7 @@ trait WikipediaApi {
      * Observable(1, 1, 1, 2, 2, 2, 3, 3, 3)
      */
     def concatRecovered[S](requestMethod: T => Observable[S]): Observable[Try[S]] =
-      obs.flatMap(requestMethod).recovered
+      obs.map(t => requestMethod(t).recovered).concat
 
   }
 
