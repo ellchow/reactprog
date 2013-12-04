@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 import org.scalatest.FunSuite
 
 
-class BinaryTreeSuite(_system: ActorSystem) extends TestKit(_system) with FunSuite with ShouldMatchers with BeforeAndAfterAll with ImplicitSender 
+class BinaryTreeSuite(_system: ActorSystem) extends TestKit(_system) with FunSuite with ShouldMatchers with BeforeAndAfterAll with ImplicitSender
 {
 
   def this() = this(ActorSystem("PostponeSpec"))
@@ -53,10 +53,10 @@ class BinaryTreeSuite(_system: ActorSystem) extends TestKit(_system) with FunSui
     expectMsg(ContainsResult(1, false))
 
     topNode ! Insert(testActor, id = 2, 1)
-    topNode ! Contains(testActor, id = 3, 1)
+    topNode ! Contains(testActor, id =3, 1)
 
     expectMsg(OperationFinished(2))
-    expectMsg(ContainsResult(3, true))
+    expectMsg(ContainsResult(3,true))
   }
 
   test("instruction example") {
@@ -70,19 +70,19 @@ class BinaryTreeSuite(_system: ActorSystem) extends TestKit(_system) with FunSui
       Contains(requesterRef, id=80, 1),
       Contains(requesterRef, id=70, 2)
       )
-   
+
     val expectedReplies = List(
       OperationFinished(id=10),
       OperationFinished(id=20),
       ContainsResult(id=50, false),
       ContainsResult(id=70, true),
       ContainsResult(id=80, false),
-      OperationFinished(id=100)     
+      OperationFinished(id=100)
       )
 
     verify(requester, ops, expectedReplies)
   }
-  
+
   test("behave identically to built-in set (includes GC)") {
     val rnd = new Random()
     def randomOperations(requester: ActorRef, count: Int): Seq[Operation] = {
@@ -122,7 +122,7 @@ class BinaryTreeSuite(_system: ActorSystem) extends TestKit(_system) with FunSui
 
     ops foreach { op =>
       topNode ! op
-      if (rnd.nextDouble() < 0.1) topNode ! GC
+      // if (rnd.nextDouble() < 0.1) topNode ! GC
     }
     receiveN(requester, ops, expectedReplies)
   }

@@ -43,14 +43,14 @@ object BinaryTreeSet {
     * `result` is true if and only if the element is present in the tree.
     */
   case class ContainsResult(id: Int, result: Boolean) extends OperationReply
-  
+
   /** Message to signal successful completion of an insert or remove operation. */
   case class OperationFinished(id: Int) extends OperationReply
 
 }
 
 
-class BinaryTreeSet extends Actor {
+class BinaryTreeSet extends Actor with ActorLogging{
   import BinaryTreeSet._
   import BinaryTreeNode._
 
@@ -66,14 +66,28 @@ class BinaryTreeSet extends Actor {
 
   // optional
   /** Accepts `Operation` and `GC` messages. */
-  val normal: Receive = { case _ => ??? }
+  val normal: Receive = {
+    case op: Operation =>
+      val todo = (pendingQueue :+ op)
+      pendingQueue = Queue.empty
+
+      todo.foreach(t => root ! t)
+
+    case GC =>
+      root ! GC
+      context.become(garbageCollecting(createRoot))
+  }
 
   // optional
   /** Handles messages while garbage collection is performed.
     * `newRoot` is the root of the new binary tree where we want to copy
     * all non-removed elements into.
     */
-  def garbageCollecting(newRoot: ActorRef): Receive = ???
+  def garbageCollecting(newRoot: ActorRef): Receive = {
+    case op: Operation =>
+      pendingQueue = pendingQueue :+ op
+    // ignore GC messages
+  }
 
 }
 
@@ -89,7 +103,7 @@ object BinaryTreeNode {
   def props(elem: Int, initiallyRemoved: Boolean) = Props(classOf[BinaryTreeNode],  elem, initiallyRemoved)
 }
 
-class BinaryTreeNode(val elem: Int, initiallyRemoved: Boolean) extends Actor {
+class BinaryTreeNode(val elem: Int, initiallyRemoved: Boolean) extends Actor with ActorLogging{
   import BinaryTreeNode._
   import BinaryTreeSet._
 
@@ -101,7 +115,55 @@ class BinaryTreeNode(val elem: Int, initiallyRemoved: Boolean) extends Actor {
 
   // optional
   /** Handles `Operation` messages and `CopyTo` requests. */
-  val normal: Receive = { case _ => ??? }
+  val normal: Receive = {
+    case Insert(requester, id, e) =>
+      // log.info("insert {} ({}); elem = {}", e, id, elem)
+      if(e == elem){
+        removed = false
+        requester ! OperationFinished(id)
+      }else{
+        val pos = if(e < elem) Left else Right
+        val child = subtrees.get(pos)
+
+        child.map(_ ! Insert(requester, id, e))
+          .getOrElse({
+            // log.info("added {} to {} of {}", e, pos, elem)
+            subtrees = subtrees + (pos -> context.actorOf(BinaryTreeNode.props(e, false)))
+            requester ! OperationFinished(id)
+          })
+      }
+
+    case Contains(requester, id, e) =>
+      // log.info("contains {} ({}); elem = {}", e, id, elem)
+      if(e == elem){
+        // log.info("contains {} found", e)
+        requester ! ContainsResult(id, !removed)
+      }else{
+        val pos = if(e < elem) Left else Right
+        val child = subtrees.get(pos)
+
+        // log.info("contains {} recursing to {} of {}", e, pos, elem)
+
+        child.map(_ ! Contains(requester, id, e))
+          .getOrElse(requester ! ContainsResult(id, false))
+      }
+
+    case Remove(requester, id, e) =>
+      if(e == elem){
+        removed = true
+        requester ! OperationFinished(id)
+      }else{
+        val pos = if(e < elem) Left else Right
+        val child = subtrees.get(pos)
+
+        child.map(_ ! Remove(requester, id, e))
+          .getOrElse(requester ! OperationFinished(id))
+      }
+
+    case opr: OperationReply => context.parent ! opr
+  }
+
+
 
   // optional
   /** `expected` is the set of ActorRefs whose replies we are waiting for,
