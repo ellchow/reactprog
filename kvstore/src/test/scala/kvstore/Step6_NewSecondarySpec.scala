@@ -20,7 +20,7 @@ class Step6_NewSecondarySpec extends TestKit(ActorSystem("Step6NewSecondarySpec"
   override def afterAll(): Unit = {
     system.shutdown()
   }
-  
+
   test("case1: Primary must start replication to new replicas") {
     val arbiter = TestProbe()
     val primary = system.actorOf(Replica.props(arbiter.ref, Persistence.props(flaky = false)), "case1-primary")
@@ -46,7 +46,7 @@ class Step6_NewSecondarySpec extends TestKit(ActorSystem("Step6NewSecondarySpec"
     secondary.reply(SnapshotAck("k1", 2L))
     user.waitAck(ack2)
   }
-  
+
   test("case2: Primary must stop replication to removed replicas and stop Replicator") {
     val arbiter = TestProbe()
     val primary = system.actorOf(Replica.props(arbiter.ref, Persistence.props(flaky = false)), "case2-primary")
@@ -56,13 +56,13 @@ class Step6_NewSecondarySpec extends TestKit(ActorSystem("Step6NewSecondarySpec"
     arbiter.expectMsg(Join)
     arbiter.send(primary, JoinedPrimary)
     arbiter.send(primary, Replicas(Set(primary, secondary.ref)))
-    
+
     val ack1 = user.set("k1", "v1")
     secondary.expectMsg(Snapshot("k1", Some("v1"), 0L))
     val replicator = secondary.lastSender
     secondary.reply(SnapshotAck("k1", 0L))
     user.waitAck(ack1)
-    
+
     watch(replicator)
     arbiter.send(primary, Replicas(Set(primary)))
     expectTerminated(replicator)
@@ -77,12 +77,12 @@ class Step6_NewSecondarySpec extends TestKit(ActorSystem("Step6NewSecondarySpec"
     arbiter.expectMsg(Join)
     arbiter.send(primary, JoinedPrimary)
     arbiter.send(primary, Replicas(Set(primary, secondary.ref)))
-    
+
     val ack1 = user.set("k1", "v1")
     secondary.expectMsg(Snapshot("k1", Some("v1"), 0L))
     secondary.reply(SnapshotAck("k1", 0L))
     user.waitAck(ack1)
-    
+
     val ack2 = user.set("k1", "v2")
     secondary.expectMsg(Snapshot("k1", Some("v2"), 1L))
     arbiter.send(primary, Replicas(Set(primary)))

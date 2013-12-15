@@ -22,7 +22,7 @@ class Step5_PrimaryPersistenceSpec extends TestKit(ActorSystem("Step5PrimaryPers
   override def afterAll(): Unit = {
     system.shutdown()
   }
-  
+
   test("case1: Primary does not acknowledge updates which have not been persisted") {
     val arbiter = TestProbe()
     val persistence = TestProbe()
