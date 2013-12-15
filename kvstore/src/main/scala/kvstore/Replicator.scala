@@ -38,10 +38,13 @@ class Replicator(val replica: ActorRef) extends Actor {
     ret
   }
 
+  override def postStop(){
+    acks.foreach { case (_, (primary, r)) => primary ! Replicated(r.key, r.id) }
+  }
+
   /* TODO Behavior for the Replicator. */
   def receive: Receive = {
     case msg@Replicate(key, valueOption, id) =>
-      println(msg)
       val seq = nextSeq
       acks = acks + (seq -> (sender, msg))
       context.actorOf(ReplicationRetrier.props(self, replica, Snapshot(key, valueOption, seq)))

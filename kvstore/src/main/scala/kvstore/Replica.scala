@@ -68,11 +68,22 @@ class Replica(val arbiter: ActorRef, persistenceProps: Props) extends Actor {
       val newReplicas = ss -- secondaries.keys
       val newSecondaries = newReplicas.map(r => r -> context.actorOf(Replicator.props(r))).toMap
 
-      replicators = replicators ++ newSecondaries.values
-      secondaries = secondaries ++ newSecondaries
+      val deadReplicas = secondaries.keySet -- ss
+
+      for{
+        r <- newSecondaries.values
+        (k, v) <- kv
+      } r ! Replicate(k, Some(v), 0L)
+
+      deadReplicas.foreach{ r =>
+        r ! PoisonPill
+        secondaries(r) ! PoisonPill
+      }
+
+      replicators = replicators ++ newSecondaries.values -- deadReplicas
+      secondaries = secondaries ++ newSecondaries -- deadReplicas
 
     case msg@Insert(key, value, id) =>
-      println(msg)
       val cancellable = context.system.scheduler.scheduleOnce(1 second, self, CleanupFailedRequest(id))
       requests = requests + (id -> (sender, 0, cancellable))
       kv = kv + (key -> value)
@@ -81,7 +92,6 @@ class Replica(val arbiter: ActorRef, persistenceProps: Props) extends Actor {
 
 
     case msg@Remove(key, id) =>
-      println(msg)
       val cancellable = context.system.scheduler.scheduleOnce(1 second, self, CleanupFailedRequest(id))
       requests = requests + (id -> (sender, 0, cancellable))
       kv = kv - key
